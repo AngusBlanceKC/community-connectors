@@ -1,0 +1,12 @@
+display_name: USGS Earthquakes
+connection:
+  parameters:
+    - name: base_url
+      type: string
+      required: false
+      description: >
+        Optional override for the USGS FDSN Event query endpoint.
+
+external_options_allowlist: >
+  lookback_days,limit,min_magnitude,event_type,min_latitude,max_latitude,
+  min_longitude,max_longitude
