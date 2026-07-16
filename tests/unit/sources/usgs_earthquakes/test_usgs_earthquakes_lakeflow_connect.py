@@ -88,6 +88,28 @@ def test_resume_uses_usgs_updatedafter_parameter():
     assert "starttime" not in params
 
 
+def test_resume_filters_records_at_existing_offset():
+    connector = UsgsEarthquakesLakeflowConnect({})
+    connector._session.get = Mock(  # pylint: disable=protected-access
+        return_value=_response(
+            [
+                _feature("same", 1784112900000),
+                _feature("next", 1784112960000),
+            ]
+        )
+    )
+
+    records, offset = connector.read_table(
+        EARTHQUAKES_TABLE,
+        {"updated_after": "2026-07-15T10:55:00+00:00"},
+        {},
+    )
+
+    rows = list(records)
+    assert [row["id"] for row in rows] == ["next"]
+    assert offset == {"updated_after": "2026-07-15T10:56:00+00:00"}
+
+
 def test_schema_and_metadata():
     connector = UsgsEarthquakesLakeflowConnect({})
 

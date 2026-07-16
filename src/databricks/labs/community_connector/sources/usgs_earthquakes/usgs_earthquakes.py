@@ -93,6 +93,11 @@ class UsgsEarthquakesLakeflowConnect(LakeflowConnect):
         payload = self._request_geojson(params)
         records = [_feature_to_record(feature) for feature in payload.get("features", [])]
         records = [record for record in records if record["updated_at"] is not None]
+        if start_offset and start_offset.get("updated_after"):
+            start_cursor = start_offset["updated_after"]
+            records = [
+                record for record in records if record["updated_at"] > start_cursor
+            ]
         records.sort(key=lambda record: record["updated_at"])
 
         if not records:
