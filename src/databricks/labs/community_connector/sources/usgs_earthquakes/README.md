@@ -3,9 +3,14 @@
 This connector ingests public earthquake event data from the USGS FDSN Event
 Web Service.
 
-The connector exposes one table:
+The connector exposes one production-style table and four demo variants:
 
-- `earthquakes`
+- `earthquakes`: CDC, the default/recommended mode
+- `earthquakes_snapshot`: snapshot ingestion
+- `earthquakes_cdc`: CDC ingestion
+- `earthquakes_cdc_with_deletes`: CDC with a delete flow; USGS does not
+  publish deleted-event tombstones, so the delete flow returns no rows
+- `earthquakes_append`: append-only ingestion
 
 It reads the USGS GeoJSON response, flattens each Feature into a row, and uses
 the event `updated` timestamp as the incremental cursor. On the first run, it

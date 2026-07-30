@@ -4,6 +4,10 @@ import pytest
 from pyspark.sql.types import DoubleType, StringType, TimestampType
 
 from databricks.labs.community_connector.sources.usgs_earthquakes.usgs_earthquakes import (
+    EARTHQUAKES_APPEND_TABLE,
+    EARTHQUAKES_CDC_TABLE,
+    EARTHQUAKES_CDC_WITH_DELETES_TABLE,
+    EARTHQUAKES_SNAPSHOT_TABLE,
     EARTHQUAKES_TABLE,
     UsgsEarthquakesLakeflowConnect,
 )
@@ -124,6 +128,43 @@ def test_schema_and_metadata():
         "cursor_field": "updated_at",
         "ingestion_type": "cdc",
     }
+
+
+def test_demo_tables_expose_all_ingestion_types():
+    connector = UsgsEarthquakesLakeflowConnect({})
+
+    assert connector.list_tables() == [
+        EARTHQUAKES_TABLE,
+        EARTHQUAKES_SNAPSHOT_TABLE,
+        EARTHQUAKES_CDC_TABLE,
+        EARTHQUAKES_CDC_WITH_DELETES_TABLE,
+        EARTHQUAKES_APPEND_TABLE,
+    ]
+    assert connector.read_table_metadata(EARTHQUAKES_SNAPSHOT_TABLE, {})[
+        "ingestion_type"
+    ] == "snapshot"
+    assert connector.read_table_metadata(EARTHQUAKES_CDC_TABLE, {})[
+        "ingestion_type"
+    ] == "cdc"
+    assert connector.read_table_metadata(EARTHQUAKES_CDC_WITH_DELETES_TABLE, {})[
+        "ingestion_type"
+    ] == "cdc_with_deletes"
+    assert connector.read_table_metadata(EARTHQUAKES_APPEND_TABLE, {})[
+        "ingestion_type"
+    ] == "append"
+
+
+def test_cdc_with_deletes_demo_table_returns_empty_delete_flow():
+    connector = UsgsEarthquakesLakeflowConnect({})
+
+    records, offset = connector.read_table_deletes(
+        EARTHQUAKES_CDC_WITH_DELETES_TABLE,
+        {"updated_after": "2026-07-15T10:55:00+00:00"},
+        {},
+    )
+
+    assert list(records) == []
+    assert offset == {"updated_after": "2026-07-15T10:55:00+00:00"}
 
 
 def test_rejects_unknown_table():

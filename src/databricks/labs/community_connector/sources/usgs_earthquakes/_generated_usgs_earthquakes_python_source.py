@@ -595,6 +595,17 @@ def register_lakeflow_source(spark):
 
     BASE_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
     EARTHQUAKES_TABLE = "earthquakes"
+    EARTHQUAKES_SNAPSHOT_TABLE = "earthquakes_snapshot"
+    EARTHQUAKES_CDC_TABLE = "earthquakes_cdc"
+    EARTHQUAKES_CDC_WITH_DELETES_TABLE = "earthquakes_cdc_with_deletes"
+    EARTHQUAKES_APPEND_TABLE = "earthquakes_append"
+    TABLE_INGESTION_TYPES = {
+        EARTHQUAKES_TABLE: "cdc",
+        EARTHQUAKES_SNAPSHOT_TABLE: "snapshot",
+        EARTHQUAKES_CDC_TABLE: "cdc",
+        EARTHQUAKES_CDC_WITH_DELETES_TABLE: "cdc_with_deletes",
+        EARTHQUAKES_APPEND_TABLE: "append",
+    }
     DEFAULT_LOOKBACK_DAYS = 1
     DEFAULT_MIN_MAGNITUDE = 0.0
     DEFAULT_LIMIT = 20000
@@ -635,8 +646,8 @@ def register_lakeflow_source(spark):
             self._session = requests.Session()
 
         def list_tables(self) -> list[str]:
-            """Return the supported table."""
-            return [EARTHQUAKES_TABLE]
+            """Return supported tables, including demo variants by ingestion type."""
+            return list(TABLE_INGESTION_TYPES)
 
         def get_table_schema(
             self, table_name: str, table_options: dict[str, str]
@@ -646,12 +657,12 @@ def register_lakeflow_source(spark):
             return EARTHQUAKES_SCHEMA
 
         def read_table_metadata(self, table_name: str, table_options: dict[str, str]) -> dict:
-            """Return CDC metadata keyed by USGS event id and updated timestamp."""
+            """Return metadata keyed by USGS event id and updated timestamp."""
             self._validate_table(table_name)
             return {
                 "primary_keys": ["id"],
                 "cursor_field": "updated_at",
-                "ingestion_type": "cdc",
+                "ingestion_type": TABLE_INGESTION_TYPES[table_name],
             }
 
         def read_table(
@@ -675,8 +686,23 @@ def register_lakeflow_source(spark):
 
             return iter(records), {"updated_after": records[-1]["updated_at"]}
 
+        def read_table_deletes(
+            self, table_name: str, start_offset: dict, table_options: dict[str, str]
+        ) -> tuple[Iterator[dict], dict]:
+            """Return deleted records for the delete-flow demo table.
+
+            USGS does not expose a deleted-earthquakes feed, so this table
+            demonstrates the framework's ``cdc_with_deletes`` path while producing
+            no delete tombstones.
+            """
+            del table_options
+            self._validate_table(table_name)
+            if table_name != EARTHQUAKES_CDC_WITH_DELETES_TABLE:
+                raise ValueError(f"Table '{table_name}' does not support delete sync")
+            return iter([]), start_offset or {}
+
         def _validate_table(self, table_name: str) -> None:
-            if table_name != EARTHQUAKES_TABLE:
+            if table_name not in TABLE_INGESTION_TYPES:
                 raise ValueError(
                     f"Table '{table_name}' is not supported. "
                     f"Supported tables: {self.list_tables()}"
