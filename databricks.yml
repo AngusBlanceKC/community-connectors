@@ -1,0 +1,36 @@
+bundle:
+  name: usgs-earthquakes-demo
+
+sync:
+  include:
+    - pyproject.toml
+    - src/**
+    - resources/**
+  exclude:
+    - .github/**
+    - tests/**
+    - tools/**
+    - pipeline-spec/**
+    - templates/**
+    - requirements/**
+
+include:
+  - resources/usgs_earthquakes.*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog for the demo output
+    default: raw_angus
+  schema:
+    description: Unity Catalog schema for the demo output
+    default: usgs_earthquakes_demo
+  connection_name:
+    description: Unity Catalog community connector connection for this source
+    default: usgs_earthquakes_demo
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-3990188733873176.16.azuredatabricks.net

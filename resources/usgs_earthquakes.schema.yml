@@ -1,0 +1,6 @@
+resources:
+  schemas:
+    usgs_earthquakes_demo:
+      name: ${var.schema}
+      catalog_name: ${var.catalog}
+      comment: Demo output schema for the USGS Earthquakes community connector.

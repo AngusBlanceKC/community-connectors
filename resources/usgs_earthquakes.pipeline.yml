@@ -1,0 +1,20 @@
+resources:
+  pipelines:
+    usgs_earthquakes:
+      name: usgs-earthquakes-demo
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      channel: PREVIEW
+      edition: ADVANCED
+      development: true
+      continuous: false
+      root_path: ../src
+      configuration:
+        usgs.connection_name: ${var.connection_name}
+      libraries:
+        - glob:
+            include: ../src/databricks/labs/community_connector/sources/usgs_earthquakes/ingest.py
+      environment:
+        dependencies:
+          - --editable ${workspace.file_path}
